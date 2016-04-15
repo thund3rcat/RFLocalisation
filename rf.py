@@ -33,17 +33,23 @@ class RFear:
         plt.ion()
         plt.figure()
         plt.show()
-        while True:
-            pass  # Busy-wait for keyboard interrupt (Ctrl+C)
-            plt.clf()
-            plt.axis([self.freq/1e6 - 1.5, self.freq/1e6 + 1.5, -50, 30])
-            samples = self.sdr.read_samples(256 * 1024)
-            # use matplotlib to estimate and plot the PSD
-            plt.psd(samples, NFFT=1024, Fs=self.sdr.sample_rate / 1e6, Fc=self.freq / 1e6)
-            plt.xlabel("Frequency (MHz)")
-            plt.ylabel("Relative power (dB)")
-            plt.draw()
-            
+        drawing = True
+        while drawing:
+            try:
+                # Busy-wait for keyboard interrupt (Ctrl+C)
+                plt.clf()
+                plt.axis([self.freq/1e6 - 1.5, self.freq/1e6 + 1.5, -50, 30])
+                samples = self.sdr.read_samples(256 * 1024)
+                # use matplotlib to estimate and plot the PSD
+                plt.psd(samples, NFFT=1024, Fs=self.sdr.sample_rate / 1e6, Fc=self.freq / 1e6)
+                plt.xlabel("Frequency (MHz)")
+                plt.ylabel("Relative power (dB)")
+                plt.draw()
+                time.sleep(0.01)
+            except KeyboardInterrupt:
+                print "Liveplot stopped by User."
+                drawing = False
+
     
     # measure power values of specified frequency for a certain time
     def getPower(self, time, size):
