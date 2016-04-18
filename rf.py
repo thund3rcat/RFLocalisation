@@ -49,7 +49,7 @@ class RFear:
             plt.draw()
             t.sleep(0.05)
                    
-    def getPower(self, time, size): # measure power values of specified frequency for a certain time
+    def getPower(self, time = 10, size = 256): # measure power values of specified frequency for a certain time
         elapsed_time = 0      
         powerstack = []
         timestack = []      
@@ -64,12 +64,21 @@ class RFear:
             timestack.append(calctime)
             elapsed_time = elapsed_time + calctime
         
-        calctime = np.mean(calctime)    
+        calctime = np.mean(calctime)   
+        #text = "Rechenzeit pro Update: " + calctime + " sec\n Gesamtzeit: " + elapsed_time + " sec"
+        print "Calculation time per update (sec):\n"
+        print calctime
+        print "\n"
+        print "Total time (sec):\n"
+        print elapsed_time 
         plt.clf()
-        plt.axis([self.__sdr.center_freq/1e6 - 1.5, self.__sdr.center_freq/1e6 + 1.5, -50, 30])
-        plt.plot(powerstack,"bo")
+        plt.axis([0, len(powerstack), -50, 30])
+        plt.plot(10*np.log10(powerstack),"bo")
+        plt.xlabel("Updates")
+        plt.ylabel("Maximum Power (dB)")
         plt.figure()
         plt.plot(timestack,"g^")
+        plt.xlabel("Updates")
+        plt.ylabel("Computation time (sec)")
         plt.show()
-        return calctime, elapsed_time
         
