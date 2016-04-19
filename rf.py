@@ -9,24 +9,23 @@ class RFear:
     # Statisches Attribut / Klassenattribut
     pass
     
-  
     # Konstruktor
     def __init__(self, *args):                                       
         self.__sdr = RtlSdr()
         self.__sdr.sample_rate = 2.4e6        
         self.__sdr.gain = 1
         self.__freq = []
-        self.setFreq(self,*args)
+        self.set_freq(self,*args)
     
     # Destruktor
     def __del__(self):
         del(self.__sdr)
     
     # Methoden    
-    def getFreq(self):
+    def get_freq(self):
         return self.__freq
 
-    def setFreq(self,*args):  
+    def set_freq(self,*args):  
         self.__freq[:] = []
         for arg in args:
             self.__freq.append(arg)
@@ -34,7 +33,7 @@ class RFear:
             self.__freq = self.__freq[1:]
         self.__sdr.center_freq = np.mean(self.__freq)
               
-    def getPSD(self): # get Power Spectral Density Live Plot 
+    def get_psd(self): # get Power Spectral Density Live Plot 
         plt.ion()
         plt.figure()
         plt.show()
@@ -49,7 +48,7 @@ class RFear:
             plt.draw()
             t.sleep(0.05)
                    
-    def getPower(self, time = 10, size = 256): # measure power values of specified frequency for a certain time
+    def get_power(self, time = 10, size = 256): # measure power values of specified frequency for a certain time
         elapsed_time = 0      
         powerstack = []
         timestack = []      
