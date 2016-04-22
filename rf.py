@@ -3,6 +3,7 @@ import time as t
 import numpy as np
 import matplotlib.pyplot as plt
 from rtlsdr import *
+from scipy import signal
         
 class RFear:
 
@@ -55,7 +56,22 @@ class RFear:
                 print "Liveplot interrupted by User"
                 drawing = False
 
-    
+    def find_peaks(self,power,freqs,interval = 80):
+        l = len(self.__freq)
+        power = power.tolist()
+        freqsTemp = freqs.tolist()
+        freqsTemp = [float(xx) for xx in freqs]
+        freqsTemp = [round(xxx,1) for xxx in freqs]
+        print "\n Freq Temp: \n"
+        print freqsTemp
+        pmax = []
+        for i in range(l):
+            x = freqsTemp.index(self.__freq[i]/1e6)
+            pmax.append(max(power[x : x + interval]))
+        return pmax
+    def find_peaks2(self,power,freqs,interval = 20):
+        return max(power)  
+
     # measure power values of specified frequency for a certain time
     def get_power(self, time = 10, size = 256):
         elapsed_time = 0      
@@ -67,7 +83,10 @@ class RFear:
             samples = self.__sdr.read_samples(size * 1024)
             # use matplotlib to estimate the PSD and save the max power
             power, freqs = plt.psd(samples, NFFT=1024, Fs=self.__sdr.sample_rate/1e6, Fc=self.__sdr.center_freq/1e6)
-	    powerstack.append(max(power))
+            print "\n Freq: \n" 
+            print freqs
+            # print freqs
+	    powerstack.append(self.find_peaks(power, freqs))
             t.sleep(0.005)
             calctime = t.time() - start_calctime
             timestack.append(calctime)
