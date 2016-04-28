@@ -104,7 +104,7 @@ class RFear:
         print elapsed_time 
         plt.clf()
         plt.axis([0, len(powerstack), -50, 30])
-        plt.plot(10*np.log10(powerstack),"bo")
+        plt.plot(10*np.log10(powerstack),"o")
         plt.xlabel("Updates")
         plt.ylabel("Maximum Power (dB)")
         plt.figure()
