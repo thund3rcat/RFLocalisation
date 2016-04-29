@@ -35,8 +35,7 @@ class RFear:
         self.__sdr.center_freq = np.mean(self.__freq)
               
     def get_psd(self): # get Power Spectral Density Live Plot 
-        plt.ion()
-        fig = plt.figure()
+        plt.ion()      # turn interactive mode on
         plt.show()
         drawing = True
         while drawing:
@@ -112,4 +111,25 @@ class RFear:
         plt.xlabel("Updates")
         plt.ylabel("Computation time (sec)")
         plt.show()
+        return powerstack
+
+    def write_to_file(l, text, filename = "Experiments"):
+        f  = open(filename,"a")
+        f.write(t.ctime() + "\n")
+        f.write(text + "\n")
+        f.write(powerstack)
+        f.write("\n")
+        f.close()
+        
+if __name__ == "__main__":
+    import sys
+    import rf
+    ear = rf.RFear(float(sys.argv[1]))
+
+
+    
+    
+    
+    
+    
         
