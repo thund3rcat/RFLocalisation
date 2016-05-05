@@ -6,7 +6,7 @@ from rtlsdr import *
 from scipy import signal
         
 class RFear:
-
+    """A simple class to compute PSD with a DVBT-dongle"""
     # Statisches Attribut / Klassenattribut
     pass
     
@@ -52,7 +52,7 @@ class RFear:
                 t.sleep(0.01)
             except KeyboardInterrupt:
                 plt.draw()
-                print "Liveplot interrupted by User"
+                print "Liveplot interrupted by user"
                 drawing = False
 
     def find_peaks(self,power,freqs,interval = 80):
@@ -62,7 +62,9 @@ class RFear:
         freqsTemp = [float(xx) for xx in freqs]
         freqsTemp = [round(xxx,1) for xxx in freqs]
         print "\n Freq Temp: \n"
-        print freqsTemp
+        print freqsTemp 
+        print "\n Length of Freq vector: \n"
+        print len(freqs)
         pmax = []
         for i in range(l):
             x = freqsTemp.index(self.__freq[i]/1e6)
@@ -105,7 +107,7 @@ class RFear:
         plt.axis([0, len(powerstack), -50, 30])
         plt.plot(10*np.log10(powerstack),"o")
         plt.xlabel("Updates")
-        plt.ylabel("Maximum Power (dB)")
+        plt.ylabel("Maximum power (dB)")
         plt.figure()
         plt.plot(timestack,"g^")
         plt.xlabel("Updates")
@@ -117,8 +119,8 @@ class RFear:
         f  = open(filename,"a")
         f.write(t.ctime() + "\n")
         f.write(text + "\n")
-        f.write(powerstack)
-        f.write("\n")
+        f.write(str(l))
+        f.write("\n\n")
         f.close()
         
 if __name__ == "__main__":
@@ -127,7 +129,7 @@ if __name__ == "__main__":
     ear = rf.RFear(float(sys.argv[1]))
 
 
-    
+
     
     
     
