@@ -1,8 +1,11 @@
+"""This module is used on a raspberry pi to read
+PSD values on a certein frequency
+"""
+
 import rf
 
-ear = rf.RFear(435e6)
+EAR_PI = rf.RFear(435e6)
 
-state = True
+EAR_PI.rpi_get_power(1, 128)
 
-while state:
-    ear.rpi_get_power()
+
