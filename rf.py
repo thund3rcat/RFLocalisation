@@ -12,14 +12,14 @@ from scipy import signal
 class RFear(object):
     """A simple class to compute PSD with a DVBT-dongle."""
     # Konstruktor
-    def __init__(self, sample_rate=2.4e6, gain=1, *args):
+    def __init__(self, *args):
         """Keyword-arguments:
         gain -- run rtl_test in the console to see available gains
         *args -- list of frequencies (must be in a range of __sdr.sample_rate)
         """
         self.__sdr = RtlSdr()
-        self.__sdr.sample_rate = sample_rate
-        self.__sdr.gain = gain
+        self.__sdr.sample_rate = 2.4e6
+        self.__sdr.gain = 1
         self.__freq = []
         self.set_freq(self, *args)
 
@@ -38,9 +38,9 @@ class RFear(object):
         self.__freq[:] = []
         for arg in args:
             self.__freq.append(arg)
-        if not isinstance(self.__freq[0], float):
-            self.__freq = self.__freq[1:]
-        self.__sdr.center_freq = np.mean(self.__freq)
+            if not isinstance(self.__freq[0], float):
+                self.__freq = self.__freq[1:]
+                self.__sdr.center_freq = np.mean(self.__freq)
 
     def get_psd(self):
         """Get Power Spectral Density Live Plot."""
@@ -73,8 +73,8 @@ class RFear(object):
         time -- time of measurement in seconds (default  10)
         size -- measure for length of fft (default 256)
         """
-        elapsed_time = 0
         powerstack = []
+        elapsed_time = 0
         timestack = []
         while elapsed_time < time:
             start_calctime = t.time()
@@ -87,8 +87,8 @@ class RFear(object):
             calctime = t.time() - start_calctime
             timestack.append(calctime)
             elapsed_time = elapsed_time + calctime
-        print "Finished"
-        calctime = np.mean(calctime)   
+            print "Finished"
+            calctime = np.mean(calctime)   
         #text = "Rechenzeit pro Update: " + calctime + " sec\n Gesamtzeit: " + elapsed_time + " sec"
         print "Number of samples per update:\n"
         print size*1024
@@ -127,7 +127,7 @@ class RFear(object):
         for i in range(length):
             marker = freqs_temp.index(self.__freq[i]/1e6)
             pmax.append(max(power[marker: marker + interval]))
-        return pmax
+            return pmax
 
     def rpi_get_power(self, printing=0, size=256):
         """Routine for Raspberry Pi.
@@ -151,6 +151,29 @@ class RFear(object):
             except KeyboardInterrupt:
                 print "Process interrupted by user"
                 return pmax
+
+    def make_test(self, size=256):
+        """Interactive method to get PSD data
+        at characteristic frequencies.
+        """
+        testing = True
+        powerstack = []
+        while testing:
+            try:
+                raw_input('Press Enter to make a measurement:\n')
+                samples = self.__sdr.read_samples(size * 1024)
+                power, freqs = plt.psd(samples, NFFT=1024,
+                    Fs=self.__sdr.sample_rate/1e6,
+                    Fc=self.__sdr.center_freq/1e6)
+                powerstack.append(self.find_peaks(power, freqs))
+                t.sleep(0.005)
+            except KeyboardInterrupt:
+                print "Testing finished"
+                plt.axis([0, len(powerstack), -50, 30])
+                plt.plot(10*np.log10(powerstack), "o")
+                plt.xlabel("Updates")
+                plt.ylabel("Maximum power (dB)")
+                return powerstack
 
 def write_to_file(results, text, filename="Experiments"):
     """Save experimental results in a simple text file.
