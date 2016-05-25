@@ -7,11 +7,10 @@ import time as t
 import numpy as np
 import matplotlib.pyplot as plt
 from rtlsdr import *
-from scipy import signal
+#from scipy import signal
 
 class RFear(object):
     """A simple class to compute PSD with a DVBT-dongle."""
-    # Konstruktor
     def __init__(self, *args):
         """Keyword-arguments:
         gain -- run rtl_test in the console to see available gains
@@ -23,13 +22,8 @@ class RFear(object):
         self.__freq = []
         self.set_freq(self, *args)
 
-    # Destruktor
     def __del__(self):
         del self.__sdr
-
-    def get_freq(self):
-        """Returns list of frequencies assigned to the object."""
-        return self.__freq
 
     def set_freq(self, *args):
         """Defines frequencies where to listen.
@@ -38,9 +32,36 @@ class RFear(object):
         self.__freq[:] = []
         for arg in args:
             self.__freq.append(arg)
-            if not isinstance(self.__freq[0], float):
-                self.__freq = self.__freq[1:]
-                self.__sdr.center_freq = np.mean(self.__freq)
+        if not isinstance(self.__freq[0], float):
+            self.__freq = self.__freq[1:]
+        self.__sdr.center_freq = np.mean(self.__freq)
+
+    def get_freq(self):
+        """Returns list of frequencies assigned to the object."""
+        return self.__freq
+
+    def set_gain(self, gain):
+        """Defines the gain which amlifies the recieved signal.
+        Run rtl_test to get valid gain values.
+        """
+        self.__sdr.gain = gain
+
+    def get_gain(self):
+        """Returns gain assigned to object and lists valid gains"""
+        print 'Valid gains:'
+        print [x/10.0 for x in self.__sdr.gain_values]
+        return self.__sdr.gain
+
+    def set_srate(self, srate):
+        """Defines the sampling rate (default 2.4e6)."""
+        self.__sdr.sample_rate = srate
+
+    def get_srate(self):
+        """Returns sample rate assigned to object
+        and gives default tuner value
+        """
+        print 'Default sample rate: 2.4MHz'
+        return self.__sdr.sample_rate
 
     def get_psd(self):
         """Get Power Spectral Density Live Plot."""
@@ -57,13 +78,13 @@ class RFear(object):
                 # use matplotlib to estimate and plot the PSD
                 plt.psd(samples, NFFT=1024, Fs=self.__sdr.sample_rate/1e6,
                     Fc=self.__sdr.center_freq/1e6)
-                plt.xlabel("Frequency (MHz)")
-                plt.ylabel("Relative power (dB)")
+                plt.xlabel('Frequency (MHz)')
+                plt.ylabel('Relative power (dB)')
                 plt.draw()
                 t.sleep(0.01)
             except KeyboardInterrupt:
                 plt.draw()
-                print "Liveplot interrupted by user"
+                print 'Liveplot interrupted by user'
                 drawing = False
 
     def get_power(self, time=10, size=256):
@@ -87,26 +108,26 @@ class RFear(object):
             calctime = t.time() - start_calctime
             timestack.append(calctime)
             elapsed_time = elapsed_time + calctime
-            print "Finished"
+            #print "Finished"
             calctime = np.mean(calctime)   
         #text = "Rechenzeit pro Update: " + calctime + " sec\n Gesamtzeit: " + elapsed_time + " sec"
-        print "Number of samples per update:\n"
+        print 'Number of samples per update:\n'
         print size*1024
-        print "\n"
-        print "Calculation time per update (sec):\n"
+        print '\n'
+        print 'Calculation time per update (sec):\n'
         print calctime
-        print "\n"
-        print "Total time (sec):\n"
+        print '\n'
+        print 'Total time (sec):\n'
         print elapsed_time
         plt.clf()
         plt.axis([0, len(powerstack), -50, 30])
-        plt.plot(10*np.log10(powerstack), "o")
-        plt.xlabel("Updates")
-        plt.ylabel("Maximum power (dB)")
+        plt.plot(10*np.log10(powerstack), 'o')
+        plt.xlabel('Updates')
+        plt.ylabel('Maximum power (dB)')
         plt.figure()
-        plt.plot(timestack, "g^")
-        plt.xlabel("Updates")
-        plt.ylabel("Computation time (sec)")
+        plt.plot(timestack, 'g^')
+        plt.xlabel('Updates')
+        plt.ylabel('Computation time (sec)')
         plt.show()
         return powerstack
 
@@ -145,11 +166,11 @@ class RFear(object):
                 pmax.append(self.find_peaks(power, freqs))
                 if printing:
                     print self.find_peaks(power, freqs)
-                    print "\n"
+                    print '\n'
                 else:
                     pass
             except KeyboardInterrupt:
-                print "Process interrupted by user"
+                print 'Process interrupted by user'
                 return pmax
 
     def make_test(self, size=256):
@@ -160,31 +181,44 @@ class RFear(object):
         powerstack = []
         while testing:
             try:
-                raw_input('Press Enter to make a measurement:\n')
+                raw_input('Press Enter to make a measurement'
+                    ' or Ctrl+C+Enter to stop testing:\n')
+                print ' ... '
                 samples = self.__sdr.read_samples(size * 1024)
                 power, freqs = plt.psd(samples, NFFT=1024,
                     Fs=self.__sdr.sample_rate/1e6,
                     Fc=self.__sdr.center_freq/1e6)
                 powerstack.append(self.find_peaks(power, freqs))
+                print 'done\n'
                 t.sleep(0.005)
             except KeyboardInterrupt:
-                print "Testing finished"
-                plt.axis([0, len(powerstack), -50, 30])
-                plt.plot(10*np.log10(powerstack), "o")
-                plt.xlabel("Updates")
-                plt.ylabel("Maximum power (dB)")
-                return powerstack
+                print 'Testing finished'
+                testing = False
+        plt.figure()
+        plt.axis([0, len(powerstack), -50, 30])
+        plt.plot(10*np.log10(powerstack), 'o')
+        plt.xlabel('Updates')
+        plt.ylabel('Maximum power (dB)')
+        return powerstack
 
-def write_to_file(results, text, filename="Experiments"):
+def plot_result(results):
+    """Plot results extracted from textfile textfile"""
+    plt.figure()
+    plt.axis([0, len(results), -50, 30])
+    plt.plot(10*np.log10(results), 'o')
+    plt.xlabel('Updates')
+    plt.ylabel('Maximum power (dB)')
+
+def write_to_file(results, text, filename='Experiments'):
     """Save experimental results in a simple text file.
     arguments:
     results -- list
     text -- description of results
     filename -- name of file (default Experiments)
     """
-    datei = open(filename, "a")
-    datei.write(t.ctime() + "\n")
-    datei.write(text + "\n")
+    datei = open(filename, 'a')
+    datei.write(t.ctime() + '\n')
+    datei.write(text + '\n')
     datei.write(str(results))
-    datei.write("\n\n")
+    datei.write('\n\n')
     datei.close()
