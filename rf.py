@@ -58,9 +58,11 @@ class RFear(object):
 
     def get_srate(self):
         """Returns sample rate assigned to object
-        and gives default tuner value
+        and gives default tuner value.
+        range is between 1.0 and 3.2 MHz
         """
         print 'Default sample rate: 2.4MHz'
+        print 'Current sample rate: '
         return self.__sdr.sample_rate
 
     def get_psd(self):
@@ -99,11 +101,8 @@ class RFear(object):
         timestack = []
         while elapsed_time < time:
             start_calctime = t.time()
-            samples = self.__sdr.read_samples(size * 1024)
             # use matplotlib to estimate the PSD and save the max power
-            power, freqs = plt.psd(samples, NFFT=1024,
-                Fs=self.__sdr.sample_rate/1e6, Fc=self.__sdr.center_freq/1e6)
-            powerstack.append(self.find_peaks(power, freqs))
+            powerstack.append(self.find_peaks(size))
             t.sleep(0.005)
             calctime = t.time() - start_calctime
             timestack.append(calctime)
@@ -131,24 +130,49 @@ class RFear(object):
         plt.show()
         return powerstack
 
-    def find_peaks(self, power, freqs, interval=80):
+    def find_peaks(self, size=256, interval=80, glb=False):
         """Find the maximum values of the PSD around the
         frequencies assigned to the object.
+        glb = True: find global PSD and respective frequency
+        in a range from 27 to 1700MHz
         """
-        length = len(self.__freq)
-        power = power.tolist()
-        freqs_temp = freqs.tolist()
-        freqs_temp = [float(xx) for xx in freqs]
-        freqs_temp = [round(xxx, 1) for xxx in freqs]
-        # print "\n Freq Temp: \n"
-        # print freqs_temp
-        # print "\n Length of Freq vector: \n"
-        # print len(freqs)
         pmax = []
-        for i in range(length):
-            marker = freqs_temp.index(self.__freq[i]/1e6)
-            pmax.append(max(power[marker: marker + interval]))
+        freqmax = []
+        if not glb:
+            samples = self.__sdr.read_samples(size * 1024)
+            power, freqs = plt.psd(samples, NFFT=1024,
+                Fs=self.__sdr.sample_rate/1e6,
+                Fc=self.__sdr.center_freq/1e6)
+            length = len(self.__freq)
+            power = power.tolist()
+            freqs_temp = freqs.tolist()
+            freqs_temp = [float(xx) for xx in freqs]
+            freqs_temp = [round(xxx, 1) for xxx in freqs]
+            # print "\n Freq Temp: \n"
+            # print freqs_temp
+            # print "\n Length of Freq vector: \n"
+            # print len(freqs)
+            for i in range(length):
+                marker = freqs_temp.index(self.__freq[i]/1e6)
+                pmax.append(max(power[marker: marker + interval]))
             return pmax
+        else:
+            freq_range = np.arange(24e6, 1702e6, 2e6)
+            for i in freq_range:
+                self.set_freq(i)
+                samples = self.__sdr.read_samples(size * 1024)
+                power, freqs = plt.psd(samples, NFFT=1024,
+                    Fs=self.__sdr.sample_rate/1e6,
+                    Fc=self.__sdr.center_freq/1e6)
+                pmax.append(max(power))
+                freqmax.append(freqs[pmax.index(max(power))])
+                plt.close('all')
+                print i
+            print max(pmax)
+            print 'at'
+            print freqmax[pmax.index(max(pmax))]
+            return max(pmax), freqmax[pmax.index(max(pmax))]
+
 
     def rpi_get_power(self, printing=0, size=256):
         """Routine for Raspberry Pi.
@@ -159,13 +183,9 @@ class RFear(object):
         pmax = []
         while running:
             try:
-                samples = self.__sdr.read_samples(size * 1024)
-                power, freqs = plt.psd(samples, NFFT=1024,
-                    Fs=self.__sdr.sample_rate/1e6,
-                    Fc=self.__sdr.center_freq/1e6)
-                pmax.append(self.find_peaks(power, freqs))
+                pmax.append(self.find_peaks(size))
                 if printing:
-                    print self.find_peaks(power, freqs)
+                    print self.find_peaks(size)
                     print '\n'
                 else:
                     pass
@@ -184,11 +204,7 @@ class RFear(object):
                 raw_input('Press Enter to make a measurement'
                     ' or Ctrl+C+Enter to stop testing:\n')
                 print ' ... '
-                samples = self.__sdr.read_samples(size * 1024)
-                power, freqs = plt.psd(samples, NFFT=1024,
-                    Fs=self.__sdr.sample_rate/1e6,
-                    Fc=self.__sdr.center_freq/1e6)
-                powerstack.append(self.find_peaks(power, freqs))
+                powerstack.append(self.find_peaks(size))
                 print 'done\n'
                 t.sleep(0.005)
             except KeyboardInterrupt:
@@ -201,8 +217,35 @@ class RFear(object):
         plt.ylabel('Maximum power (dB)')
         return powerstack
 
+    def get_performance(self, size, bandwidth, time=10):
+        """Measure performance at certain sizes and sampling rates
+        keyword arguments:
+        time -- time of measurement in seconds (default  10)
+        size -- measure for length of fft (default 256)
+        bandwidth -- sampling rate of dvbt-dongle
+        """
+        self.set_srate(bandwidth)
+        powerstack = []
+        timestack = []
+        elapsed_time = 0
+        while elapsed_time < time:
+            start_calctime = t.time()
+            # use matplotlib to estimate the PSD and save the max power
+            powerstack.append(self.find_peaks(size))
+            t.sleep(0.005)
+            calctime = t.time() - start_calctime
+            timestack.append(calctime)
+            elapsed_time = elapsed_time + calctime
+        calctime = np.mean(timestack)
+        print 'Finished.'
+        print 'Total time: '
+        print elapsed_time
+        print 'Update time: '
+        print calctime
+        return calctime
+
 def plot_result(results):
-    """Plot results extracted from textfile textfile"""
+    """Plot results extracted from textfile"""
     plt.figure()
     plt.axis([0, len(results), -50, 30])
     plt.plot(10*np.log10(results), 'o')
