@@ -65,7 +65,7 @@ class RFear(object):
         print 'Current sample rate: '
         return self.__sdr.sample_rate
 
-    def get_psd(self):
+    def get_psd(self, size=256):
         """Get Power Spectral Density Live Plot."""
         plt.ion()      # turn interactive mode on
         plt.show()
@@ -76,7 +76,7 @@ class RFear(object):
                 plt.clf()
                 plt.axis([self.__sdr.center_freq/1e6 - 1.5,
                     self.__sdr.center_freq/1e6 + 1.5, -50, 30])
-                samples = self.__sdr.read_samples(256 * 1024)
+                samples = self.__sdr.read_samples(size * 1024)
                 # use matplotlib to estimate and plot the PSD
                 plt.psd(samples, NFFT=1024, Fs=self.__sdr.sample_rate/1e6,
                     Fc=self.__sdr.center_freq/1e6)
@@ -154,7 +154,8 @@ class RFear(object):
             # print len(freqs)
             for i in range(length):
                 marker = freqs_temp.index(self.__freq[i]/1e6)
-                pmax.append(max(power[marker-.1*interval:marker+.9*interval]))
+                pmax.append(max(power[marker-int(.1*interval):marker
+                    +int(.9*interval)]))
             return pmax
         else:
             freq_range = np.arange(24e6, 1702e6, 2e6)
@@ -217,7 +218,7 @@ class RFear(object):
         plt.ylabel('Maximum power (dB)')
         return powerstack
 
-    def get_performance(self, size, bandwidth, time=10):
+    def get_performance(self, bandwidth=2.4e6):
         """Measure performance at certain sizes and sampling rates
         keyword arguments:
         time -- time of measurement in seconds (default  10)
@@ -225,24 +226,48 @@ class RFear(object):
         bandwidth -- sampling rate of dvbt-dongle
         """
         self.set_srate(bandwidth)
-        powerstack = []
-        timestack = []
-        elapsed_time = 0
-        while elapsed_time < time:
-            start_calctime = t.time()
-            # use matplotlib to estimate the PSD and save the max power
-            powerstack.append(self.find_peaks(size))
-            t.sleep(0.005)
-            calctime = t.time() - start_calctime
-            timestack.append(calctime)
-            elapsed_time = elapsed_time + calctime
-        calctime = np.mean(timestack)
+        measurements = 200
+        SIZE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 46, 52, 58, 64, 76, 88, 100, 128, 160, 192, 234, 256]
+        VAR = []
+        MEAN = []
+        UPDATE = []  
+        total_time = 0     
+        for i in SIZE:
+            cnt = 0
+            powerstack = []
+            timestack = []
+            elapsed_time = 0
+            while cnt <= measurements:
+                cnt = cnt+1
+                start_calctime = t.time()
+                # use matplotlib to estimate the PSD and save the max power
+                powerstack.append(self.find_peaks(i))
+                t.sleep(0.005)
+                calctime = t.time() - start_calctime
+                timestack.append(calctime)
+                elapsed_time = elapsed_time + calctime
+            calctime = np.mean(timestack)
+            VAR.append(np.var(powerstack))
+            MEAN.append(np.mean(powerstack))
+            UPDATE.append(calctime)
+            total_time = total_time+elapsed_time
         print 'Finished.'
-        print 'Total time: '
-        print elapsed_time
-        print 'Update time: '
-        print calctime
-        return calctime
+        print 'Total time [sec]: '
+        print total_time
+        plt.figure()
+        plt.plot(SIZE, VAR, 'ro')
+        plt.xlabel('Sample Size (*1024)')
+        plt.ylabel('Variance (dB)')
+        plt.figure()
+        plt.plot(SIZE, MEAN, 'x')
+        plt.xlabel('Sample Size (*1024)')
+        plt.ylabel('Mean Value (dB)')
+        plt.figure()
+        plt.plot(SIZE, UPDATE, 'g^')
+        plt.xlabel('Sample Size (*1024)')
+        plt.ylabel('Update rate (sec)')
+        plt.show()
+        return SIZE, VAR, MEAN, UPDATE
 
 def plot_result(results):
     """Plot results extracted from textfile"""
