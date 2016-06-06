@@ -66,7 +66,7 @@ class RFear(object):
         print 'Current sample rate: '
         return self.__sdr.sample_rate
 
-    def get_psd(self):
+    def get_psd(self, size=256):
         """Get Power Spectral Density Live Plot."""
         plt.ion()      # turn interactive mode on
         plt.show()
@@ -77,7 +77,7 @@ class RFear(object):
                 plt.clf()
                 plt.axis([self.__sdr.center_freq/1e6 - 1.5,
                     self.__sdr.center_freq/1e6 + 1.5, -50, 30])
-                samples = self.__sdr.read_samples(256 * 1024)
+                samples = self.__sdr.read_samples(size * 1024)
                 # use matplotlib to estimate and plot the PSD
                 plt.psd(samples, NFFT=1024, Fs=self.__sdr.sample_rate/1e6,
                     Fc=self.__sdr.center_freq/1e6)
@@ -155,7 +155,7 @@ class RFear(object):
             # print len(freqs)
             for i in range(length):
                 marker = freqs_temp.index(self.__freq[i]/1e6)
-                pmax.append(max(power[marker-.1*interval:marker+.9*interval]))
+                pmax.append(max(power[marker-int(.1*interval):marker+int(.9*interval)]))
             return pmax
         else:
             freq_range = np.arange(24e6, 1702e6, 2e6)
@@ -264,6 +264,6 @@ def write_to_file(results, text, filename='Experiments'):
     datei = open(filename, 'a')
     datei.write(t.ctime() + '\n')
     datei.write(text + '\n')
-    datei.write(results)
+    datei.write(str(results))
     datei.write('\n\n')
     datei.close()
