@@ -130,7 +130,7 @@ class RFear(object):
         plt.show()
         return powerstack
 
-    def find_peaks(self, size=256, interval=80, glb=False):
+    def find_peaks(self, size=256, interval=100, glb=False):
         """Find the maximum values of the PSD around the
         frequencies assigned to the object.
         glb = True: find global PSD and respective frequency
@@ -154,7 +154,7 @@ class RFear(object):
             # print len(freqs)
             for i in range(length):
                 marker = freqs_temp.index(self.__freq[i]/1e6)
-                pmax.append(max(power[marker: marker + interval]))
+                pmax.append(max(power[marker-.1*interval:marker+.9*interval]))
             return pmax
         else:
             freq_range = np.arange(24e6, 1702e6, 2e6)
@@ -251,6 +251,7 @@ def plot_result(results):
     plt.plot(10*np.log10(results), 'o')
     plt.xlabel('Updates')
     plt.ylabel('Maximum power (dB)')
+    plt.show()
 
 def write_to_file(results, text, filename='Experiments'):
     """Save experimental results in a simple text file.
@@ -262,6 +263,6 @@ def write_to_file(results, text, filename='Experiments'):
     datei = open(filename, 'a')
     datei.write(t.ctime() + '\n')
     datei.write(text + '\n')
-    datei.write(str(results))
+    datei.write(results)
     datei.write('\n\n')
     datei.close()
