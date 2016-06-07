@@ -8,7 +8,7 @@ import time as t
 import numpy as np
 import matplotlib.pyplot as plt
 from rtlsdr import *
-#from scipy import signal
+from scipy import signal
 
 class RFear(object):
     """A simple class to compute PSD with a DVBT-dongle."""
@@ -79,8 +79,11 @@ class RFear(object):
                     self.__sdr.center_freq/1e6 + 1.5, -50, 30])
                 samples = self.__sdr.read_samples(size * 1024)
                 # use matplotlib to estimate and plot the PSD
-                plt.psd(samples, NFFT=1024, Fs=self.__sdr.sample_rate/1e6,
-                    Fc=self.__sdr.center_freq/1e6)
+                #plt.psd(samples, NFFT=1024, Fs=self.__sdr.sample_rate/1e6,
+                #    Fc=self.__sdr.center_freq/1e6)
+                f, Pxx_den = signal.periodogram(samples,
+                    fs=self.__sdr.sample_rate/1e6, nfft=1024)
+                plt.plot(f+self.__sdr.center_freq/1e6, 10*np.log10(Pxx_den))
                 plt.xlabel('Frequency (MHz)')
                 plt.ylabel('Relative power (dB)')
                 plt.draw()
@@ -103,7 +106,7 @@ class RFear(object):
         while elapsed_time < time:
             start_calctime = t.time()
             # use matplotlib to estimate the PSD and save the max power
-            powerstack.append(self.find_peaks(size))
+            powerstack.append(self.find_peaks2(size))
             t.sleep(0.005)
             calctime = t.time() - start_calctime
             timestack.append(calctime)
@@ -155,12 +158,8 @@ class RFear(object):
             # print len(freqs)
             for i in range(length):
                 marker = freqs_temp.index(self.__freq[i]/1e6)
-<<<<<<< HEAD
-                pmax.append(max(power[marker-int(.1*interval):marker+int(.9*interval)]))
-=======
                 pmax.append(max(power[marker-int(.1*interval):marker
                     +int(.9*interval)]))
->>>>>>> github/master
             return pmax
         else:
             freq_range = np.arange(24e6, 1702e6, 2e6)
@@ -178,6 +177,17 @@ class RFear(object):
             print 'at'
             print freqmax[pmax.index(max(pmax))]
             return max(pmax), freqmax[pmax.index(max(pmax))]
+        
+    def find_peaks2(self, size=256):
+        length = len(self.__freq)
+        pmax = []
+        samples = self.__sdr.read_samples(size * 1024)
+        f, Pxx_den = signal.periodogram(samples,
+            fs=self.__sdr.sample_rate/1e6, nfft=1024)
+        for i in range(length):
+            pmax.append(max(Pxx_den))
+        return pmax
+        
 
 
     def rpi_get_power(self, printing=0, size=256):
@@ -189,9 +199,9 @@ class RFear(object):
         pmax = []
         while running:
             try:
-                pmax.append(self.find_peaks(size))
+                pmax.append(self.find_peaks2(size))
                 if printing:
-                    print self.find_peaks(size)
+                    print self.find_peaks2(size)
                     print '\n'
                 else:
                     pass
@@ -246,7 +256,7 @@ class RFear(object):
                 cnt = cnt+1
                 start_calctime = t.time()
                 # use matplotlib to estimate the PSD and save the max power
-                powerstack.append(self.find_peaks(i))
+                powerstack.append(self.find_peaks2(i))
                 t.sleep(0.005)
                 calctime = t.time() - start_calctime
                 timestack.append(calctime)
