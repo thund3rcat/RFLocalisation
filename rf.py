@@ -98,13 +98,12 @@ class RFear(object):
         """Returns the reference values from calibration"""
         return self.__d0, self.__p0
 
-    def get_psd(self, size=256):
+    def plot_psd(self, size=256):
         """Get Power Spectral Density Live Plot.
         Keyword arguments:
         size -- measure for length of fft (default 256)
         """
         plt.ion()      # turn interactive mode on
-        plt.show()
         drawing = True
         while drawing:
             try:
@@ -130,15 +129,15 @@ class RFear(object):
                 plt.grid()
                 plt.xlabel('Frequency [MHz]')
                 plt.ylabel('Power [dB]')
-                plt.draw()
-                t.sleep(0.01)
+                plt.show()
+                plt.pause(0.001)
             except KeyboardInterrupt:
-                plt.draw()
+                plt.show()
                 print 'Liveplot interrupted by user'
                 drawing = False
         return pxx_den, freq
 
-    def get_power(self, time=10, size=256):
+    def plot_rss(self, time=10, size=256):
         """Measure power values of specified frequency
         for a certain time and performance.
         Keyword arguments:
@@ -406,7 +405,6 @@ class RFear(object):
         y_max = 100
         plt.axis([x_min, x_max, y_min, y_max])
         plt.ion()
-        plt.show()
         plt.grid()
         plt.xlabel('x-Axis [cm]')
         plt.ylabel('y-Axis [cm]')
@@ -423,8 +421,8 @@ class RFear(object):
                     y_est = np.sqrt(pos_est[-1][0]**2 - x_est**2)
                     print [x_est, y_est]
                     plt.plot(x_est, y_est, 'bo')
-                plt.draw()
-                t.sleep(0.01)
+                plt.show()
+                plt.pause(0.001)
                 print pos_est[-1]
                 print '\n'
         except KeyboardInterrupt:
